@@ -11,7 +11,7 @@ interface IVesting {
 }
 
 contract ZiaratToken is ERC20, Ownable, ERC20Permit {
-    uint256 public immutable maxSupply = 1_000_000_000 * 10**decimals(); // 1 Billion token cap
+    uint256 public immutable maxSupply = 1_000_000_000 * 10 ** decimals(); // 1 Billion token cap
     IVesting public vestingContract; // Vesting contract interface
     // Governance-related mappings
     mapping(address => uint256) public votingPower; // Voting power for governance
@@ -20,16 +20,8 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
     event Burn(address indexed from, uint256 amount);
     event VestingContractUpdated(address indexed vestingContract);
     event TokensBridged(address indexed account, uint256 amount);
-    event GovernanceProposalCreated(
-        uint256 indexed proposalId,
-        address indexed proposer,
-        string description
-    );
-    event GovernanceProposalVoted(
-        uint256 indexed proposalId,
-        address indexed voter,
-        bool support
-    );
+    event GovernanceProposalCreated(uint256 indexed proposalId, address indexed proposer, string description);
+    event GovernanceProposalVoted(uint256 indexed proposalId, address indexed voter, bool support);
     event GovernanceProposalExecuted(uint256 indexed proposalId);
 
     struct Proposal {
@@ -44,28 +36,15 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
     mapping(uint256 => mapping(address => bool)) public hasVoted;
 
     // Constructor
-    constructor(uint256 initialSupply)
-        ERC20("Ziarat", "ZIAR")
-        ERC20Permit("Ziarat")
-        Ownable(msg.sender)
-    {
-        _mint(msg.sender, initialSupply * 10**decimals()); // Mint initial supply to deployer
+    constructor(uint256 initialSupply) ERC20("Ziarat", "ZIAR") ERC20Permit("Ziarat") Ownable(msg.sender) {
+        _mint(msg.sender, initialSupply * 10 ** decimals()); // Mint initial supply to deployer
     }
 
     // Governance functionality
 
-    function createProposal(string memory description)
-        external
-        returns (uint256)
-    {
+    function createProposal(string memory description) external returns (uint256) {
         proposals.push(
-            Proposal({
-                proposer: msg.sender,
-                description: description,
-                votesFor: 0,
-                votesAgainst: 0,
-                executed: false
-            })
+            Proposal({proposer: msg.sender, description: description, votesFor: 0, votesAgainst: 0, executed: false})
         );
         uint256 proposalId = proposals.length - 1;
         emit GovernanceProposalCreated(proposalId, msg.sender, description);
@@ -74,10 +53,7 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
 
     function voteOnProposal(uint256 proposalId, bool support) external {
         require(proposalId < proposals.length, "Proposal does not exist");
-        require(
-            !hasVoted[proposalId][msg.sender],
-            "You have already voted on this proposal"
-        );
+        require(!hasVoted[proposalId][msg.sender], "You have already voted on this proposal");
 
         Proposal storage proposal = proposals[proposalId];
         uint256 voterPower = votingPower[msg.sender];
@@ -97,10 +73,7 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
         require(proposalId < proposals.length, "Proposal does not exist");
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.executed, "Proposal already executed");
-        require(
-            proposal.votesFor > proposal.votesAgainst,
-            "Proposal did not pass"
-        );
+        require(proposal.votesFor > proposal.votesAgainst, "Proposal did not pass");
 
         proposal.executed = true;
         emit GovernanceProposalExecuted(proposalId);
@@ -108,10 +81,7 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
 
     // Set the Vesting contract address (only owner)
     function setVestingContract(address _vestingContract) external onlyOwner {
-        require(
-            _vestingContract != address(0),
-            "Invalid vesting contract address"
-        );
+        require(_vestingContract != address(0), "Invalid vesting contract address");
         vestingContract = IVesting(_vestingContract);
         emit VestingContractUpdated(_vestingContract);
     }
@@ -119,10 +89,7 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
     // Mint new tokens (only owner, with max supply cap)
     function mint(address to, uint256 amount) external onlyOwner {
         require(to != address(0), "Cannot mint to zero address");
-        require(
-            totalSupply() + amount <= maxSupply,
-            "Cannot mint more than max supply"
-        );
+        require(totalSupply() + amount <= maxSupply, "Cannot mint more than max supply");
         _mint(to, amount);
         emit Mint(to, amount);
     }
@@ -136,24 +103,15 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
     // Release vested tokens (calls the vesting contract)
     function releaseVestedTokens(address account) external {
         require(account != address(0), "Invalid account address");
-        require(
-            address(vestingContract) != address(0),
-            "Vesting contract is not set"
-        );
+        require(address(vestingContract) != address(0), "Vesting contract is not set");
         vestingContract.release(account);
     }
 
     // Bridge functionality for Layer 2
-    function bridgeTokens(address recipient, uint256 amount)
-        external
-        onlyOwner
-    {
+    function bridgeTokens(address recipient, uint256 amount) external onlyOwner {
         require(recipient != address(0), "Invalid recipient address");
         require(amount > 0, "Amount must be greater than zero");
-        require(
-            totalSupply() + amount <= maxSupply,
-            "Cannot bridge more than max supply"
-        );
+        require(totalSupply() + amount <= maxSupply, "Cannot bridge more than max supply");
 
         _mint(recipient, amount);
         emit TokensBridged(recipient, amount);
@@ -161,18 +119,15 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
 
     // Adjust voting power for governance (only owner)
     function setVotingPower(address account, uint256 power) external onlyOwner {
-        require(
-            account != address(0),
-            "Cannot set voting power for zero address"
-        );
+        require(account != address(0), "Cannot set voting power for zero address");
         votingPower[account] = power;
     }
 
-    function getTotalNumberOfProposals() public view returns(uint256) {
+    function getTotalNumberOfProposals() public view returns (uint256) {
         return proposals.length;
     }
 
-    function getVoterStatusAgaintProposal(uint256 proposalId, address account) public view returns(bool) {
+    function getVoterStatusAgaintProposal(uint256 proposalId, address account) public view returns (bool) {
         return hasVoted[proposalId][account];
     }
 }
