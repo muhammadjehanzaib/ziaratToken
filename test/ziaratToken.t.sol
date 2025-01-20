@@ -20,6 +20,8 @@ contract TestZiaratToken is Test {
         zt.transfer(Alice, 1000 * 10 ** 18);
         vm.prank(msg.sender);
         zt.setVotingPower(Bob, 10);
+        vm.prank(msg.sender);
+        zt.setVotingPower(Alice, 15);
     }
 
     function testTotalSupply() public view {
@@ -65,11 +67,46 @@ contract TestZiaratToken is Test {
         vm.startPrank(Bob);
         zt.voteOnProposal(0, true);
         vm.stopPrank();
+        vm.prank(Alice);
+        zt.voteOnProposal(0, false);
 
         bool hasVotedFor = zt.getVoterStatusAgaintProposal(0, Bob);
         assertEq(hasVotedFor, true);
 
-        // uint256 totalVotesForProposal = zt.proposals[0].votesFor;
-        // ZiaratToken.Proposal memory proposal = zt.proposals[0];
+        ZiaratToken.Proposal memory proposal = zt.getProposalDetials(0);
+        assertEq(proposal.votesFor, 10);
+        assertEq(proposal.votesAgainst, 15);
+    }
+
+    function testExpectedRevertOnFailedProposals() public {
+        testVoteOnProposal();
+        vm.prank(msg.sender);
+        vm.expectRevert();
+        zt.executeProposal(0); // 15% vote against it
+    }
+
+    function testProposalsExecuteOnPass() public {
+        testVoteOnProposal();
+
+        vm.prank(Alice);
+        zt.voteOnProposal(1, true);
+        vm.prank(Bob);
+        zt.voteOnProposal(1, true);
+
+        vm.prank(msg.sender);
+        zt.executeProposal(1);
+
+        ZiaratToken.Proposal memory proposal = zt.getProposalDetials(1);
+        assertEq(proposal.executed, true);
+    }
+
+    function testMintMoreSupply() public {
+        // vm.prank(Alice);
+        // vm.expectRevert();
+        // zt.mint(Alice, 1000 * 10 ** zt.decimals());
+        console.log(zt.totalSupply());
+        vm.prank(zt.owner());
+        zt.mint(zt.owner(), 1000 * 10 ** zt.decimals());
+        assertEq(zt.totalSupply(), 1000000100 * 10 ** zt.decimals());
     }
 }
