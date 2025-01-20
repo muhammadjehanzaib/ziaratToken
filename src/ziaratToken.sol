@@ -123,11 +123,15 @@ contract ZiaratToken is ERC20, Ownable, ERC20Permit {
         votingPower[account] = power;
     }
 
-    function getTotalNumberOfProposals() public view returns (uint256) {
+    function getTotalNumberOfProposals() external view returns (uint256) {
         return proposals.length;
     }
 
-    function getVoterStatusAgaintProposal(uint256 proposalId, address account) public view returns (bool) {
+    function getVoterStatusAgaintProposal(uint256 proposalId, address account) external view returns (bool) {
         return hasVoted[proposalId][account];
+    }
+
+    function getProposalDetials(uint256 proposalId) external view returns(Proposal memory) {
+        return proposals[proposalId];
     }
 }
